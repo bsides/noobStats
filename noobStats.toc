@@ -1,0 +1,15 @@
+﻿## Interface: 40300
+## Title: noobStats
+## Title-ptBR: noobStats
+## Version: 1.0.0
+## Notes: Blocks that shows important stats for your char
+## Notes-ptBR: Blocos que mostram atributos importantes ao seu char
+## Author: bsides
+
+nooStats.lua
+stathybrid.lua
+statpower.lua
+statpvp.lua
+
+# Libraries
+Libs\LibStub\Libstub.lua
