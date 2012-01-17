@@ -1,0 +1,9 @@
+This is my attempt to create a block of important attributes. 
+
+The information for Specific roles (tanks, dps, healers) are changed on the fly in case you change talent or character.
+Yes they are all in the paperdoll, except the CTC and Avoidance for the tank roles. I just find it more useable to use a Data Broker and just mouseover to get these stats. It looks good with Fortress :)
+
+It's localized into english and portuguese only. If you want to localize it, please contact me.
+Pictures are in portuguese because my client is in portuguese.
+
+It makes use of LibDataBroker by Tekkub. Meaning: you'll need a Data Display Addon to make it work. Check this link out for more: https://github.com/tekkub/libdatabroker-1-1/wiki/Addons-using-LDB in the section "Data Display addons"
