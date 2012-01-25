@@ -67,6 +67,13 @@ local function PowerOnUpdate()
 		displayStatText = statAttackPowerEffectiveAP
 		displayStatLabel = STAT_ATTACK_POWER	
 	elseif noobStats.whatRole() == 5 then -- DPS Ranged
+		-- Ranged stats
+		-- ranged attack power
+		local statRAPBase, statRAPPosBuff, statRAPNegBuff = UnitRangedAttackPower("player")
+		local statRAP = max(0, statRAPBase + statRAPPosBuff + statRAPNegBuff);
+
+		displayStatText = statRAP
+		displayStatLabel = STAT_ATTACK_POWER	
 	end
 	
 	noobLDBPower.label = displayStatLabel
@@ -84,6 +91,8 @@ function noobLDBPower.OnTooltipShow(tip)
 	local classColor = RAID_CLASS_COLORS[select(2, UnitClass("Player"))]
 	--self:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b)
 	
+	local NS = noobStats -- used for getting local functions... or something like that
+	
 	-- Basic stats	
 	local statStrength		= select(2, UnitStat("player", 1))		-- SPELL_STAT1_NAME
 	local statAgility		= select(2, UnitStat("player", 2))		-- SPELL_STAT2_NAME
@@ -92,11 +101,11 @@ function noobLDBPower.OnTooltipShow(tip)
 	local statSpirit		= select(2, UnitStat("player", 5))		-- SPELL_STAT5_NAME	
 	
 	-- What Basic stats do?											-- DEFAULT_STATx_TOOLTIP
-	local statStrengthGives 	= noobGetSubStat("player", 1)
-	local statAgilityGives 		= noobGetSubStat("player", 2)		-- STAT_TOOLTIP_BONUS_AP
-	local statStaminaGives 		= noobGetSubStat("player", 3)		
-	local statIntelectGives	 	= noobGetSubStat("player", 4)		
-	local statSpiritGives	 	= noobGetSubStat("player", 5)		
+	local statStrengthGives 	= NS.getSubStat("player", 1)
+	local statAgilityGives 		= NS.getSubStat("player", 2)		-- STAT_TOOLTIP_BONUS_AP
+	local statStaminaGives 		= NS.getSubStat("player", 3)		
+	local statIntelectGives	 	= NS.getSubStat("player", 4)		
+	local statSpiritGives	 	= NS.getSubStat("player", 5)		
 
 	-- Caster stats
 	local statSpellPower 				= GetSpellBonusDamage(7)	-- STAT_SPELLPOWER
@@ -184,19 +193,54 @@ function noobLDBPower.OnTooltipShow(tip)
 		expertisePercentDisplay = statExpertisePercent.."%"
 	end
 	
-	-- Ranged stats
-	--Agility
-	--Dano (Arma)
-    --DPS (Arma)
-    --Poder de Ataque
-    --Velocidade (Arma)
+	-- Ranged stats	
+	local statRAttackSpeed, statRMinDamage, statRMaxDamage, statRPhysicalBonusPos, statRPhysicalBonusNeg, statPercentR = UnitRangedDamage("player");
+	
+	-- Round to the third decimal place (i.e. 99.9 percent)
+	statPercentR = math.floor(statPercentR * 10^3 + 0.5) / 10^3
+	-- Ranged Damage Min
+	local statRDPSMin = max(floor(statRMinDamage),1); -- DAMAGE
+	-- Ranged Damage Max
+	local statRDPSMax = max(ceil(statRMaxDamage),1); -- DAMAGE
+	--debug print("statRDPSMin = " .. statRDPSMin .. "\nstatRDPSMax = " .. statRDPSMax)
+	
+	local statRBaseDamage;
+	local statRFullDamage;
+	--local statRTotalBonus;
+	local statRangedDPS;
+
+	statRMinDamage = (statRMinDamage / statPercentR) - statRPhysicalBonusPos - statRPhysicalBonusNeg;
+	statRMaxDamage = (statRMaxDamage / statPercentR) - statRPhysicalBonusPos - statRPhysicalBonusNeg;
+
+	statRBaseDamage = (statRMinDamage + statRMaxDamage) * 0.5;
+	statRFullDamage = (statRBaseDamage + statRPhysicalBonusPos + statRPhysicalBonusNeg) * statPercentR;
+	--statRTotalBonus = (statRFullDamage - statRBaseDamage);
+	-- Ranged DPS
+	if( statRAttackSpeed == 0 ) then
+		statRangedDPS = 0; -- Ranged DPS if no ranged weapon is found... duh!
+	else
+		statRangedDPS = (max(statRFullDamage,1) / statRAttackSpeed); -- Ranged DPS 
+		statRangedDPS = format("%.1F", statRangedDPS) -- just formatting for lazyness
+	end
+	
+	local statRAPBase, statRAPPosBuff, statRAPNegBuff = UnitRangedAttackPower("player")
+	local statRAPTotal = statRAPBase + statRAPPosBuff + statRAPNegBuff
+	-- Ranged Attack Power
+	statRAPTip = max((statRAPTotal), 0) / ATTACK_POWER_MAGIC_NUMBER -- 14!
+	statRAP = max(0, statRAPBase + statRAPPosBuff + statRAPNegBuff);
+	
+	local statPetAPBonus = HUNTER_PET_BONUS["PET_BONUS_RAP_TO_AP"] * statRAPTotal -- PET_BONUS_TOOLTIP_RANGED_ATTACK_POWER
+	local statPetSpellDmgBonus = HUNTER_PET_BONUS["PET_BONUS_RAP_TO_SPELLDMG"] * statRAPTotal -- PET_BONUS_TOOLTIP_SPELLDAMAGE
 	
 	-- Misc stats
 	local PetHealth		= UnitHealthMax("pet")
+	-- Warlock Pet what?
+
+
 	
 	
 	-- Tooltip!
-	local whatClass = noobClassRoles(select(2, UnitClass("Player")))
+	local whatClass = NS.classRoles(select(2, UnitClass("Player")))
 	
 	tip:AddLine(L["noobStats Specific Stats"], HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 	if whatClass ~= "NENHUM" then
@@ -217,7 +261,7 @@ function noobLDBPower.OnTooltipShow(tip)
 	tip:AddLine(" ")
 	
 	-- 1 = Tank
-	if noobStats.whatRole() == 1 then
+	if NS.whatRole() == 1 then
 		-- Total Health
 		tip:AddDoubleLine(format(STAT_FORMAT, HEALTH), statHealth)
 		-- Stamina and what it gives
@@ -246,7 +290,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		tip:AddDoubleLine(format(STAT_FORMAT, BLOCK_CHANCE), statBlock, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b)
 		
 	-- 2 = DPS Caster, 3 = Healer
-	elseif noobStats.whatRole() == 2 or noobStats.whatRole() == 3 then
+	elseif NS.whatRole() == 2 or noobStats.whatRole() == 3 then
 		-- Intelect and what it gives
 		tip:AddDoubleLine(format(STAT_FORMAT, SPELL_STAT4_NAME), statIntelect)
 		tip:AddLine(statIntelectGives, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
@@ -262,7 +306,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		tip:AddDoubleLine(format(STAT_FORMAT, MANA_REGEN_COMBAT), statRegenIn)
 		
 	-- 4 = DPS Melee
-	elseif noobStats.whatRole() == 4 then
+	elseif NS.whatRole() == 4 then
 		if unitClass == "WARRIOR" or unitClass == "PALADIN" or unitClass == "DEATHKNIGHT" then
 			-- Strength and what it gives
 			tip:AddDoubleLine(format(STAT_FORMAT, SPELL_STAT1_NAME), statStrength)
@@ -283,7 +327,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		-- MainHand DPS
 		tip:AddLine(INVTYPE_WEAPONMAINHAND, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, true)
 		tip:AddDoubleLine(format(STAT_FORMAT, ATTACK_SPEED_SECONDS), format("%.2F", statMainSpeed), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
-		tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE), statDamageMin.." / "..statDamageMax, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+		tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE), statDamageMin.." - "..statDamageMax, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 		tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE_PER_SECOND), statMainDPS, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 		--
 		tip:AddLine(" ")
@@ -291,18 +335,58 @@ function noobLDBPower.OnTooltipShow(tip)
 		if (IsDualWielding()) then
 			tip:AddLine(INVTYPE_WEAPONOFFHAND, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, true)
 			tip:AddDoubleLine(format(STAT_FORMAT, ATTACK_SPEED_SECONDS), format("%.2F", statOffhandSpeed), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
-			tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE), statDamageMinOffhand.." / "..statDamageMaxOffhand, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+			tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE), statDamageMinOffhand.." - "..statDamageMaxOffhand, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 			tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE_PER_SECOND), statOffhandDPS, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 		end
 	
 	-- DPS Ranged
-	elseif noobStats.whatRole() == 5 then
-		tip:AddDoubleLine(SPELL_STAT2_NAME, statAgility)
+	elseif NS.whatRole() == 5 then
+		-- Agility and what it gives
+		tip:AddDoubleLine(format(STAT_FORMAT, SPELL_STAT2_NAME), statAgility)
+		tip:AddLine(statAgilityGives, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
+		--
+		tip:AddLine(" ")
+		-- Ranged stuff
+		tip:AddLine(STAT_CATEGORY_RANGED, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, true)
+		-- Ranged Attack Power
+		tip:AddDoubleLine(format(STAT_FORMAT, STAT_ATTACK_POWER), statRAP)
+		-- What RAP Gives?
+		tip:AddLine(format(RANGED_ATTACK_POWER_TOOLTIP, statRAPTip), GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
+		-- Ranged Attack Power gives stuff to Pet, minini!
+		if statPetAPBonus > 0 then
+			tip:AddLine(format(PET_BONUS_TOOLTIP_RANGED_ATTACK_POWER, statPetAPBonus), GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
+		end
+		if statPetSpellDmgBonus > 0 then
+			tip:AddLine(format(PET_BONUS_TOOLTIP_SPELLDAMAGE, statPetSpellDmgBonus), GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
+		end
+		--
+		tip:AddLine(" ")
+		-- Ranged DPS
+		tip:AddLine(INVTYPE_RANGED, HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b, true)
+		tip:AddDoubleLine(format(STAT_FORMAT, ATTACK_SPEED_SECONDS), format("%.2F", statRAttackSpeed), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+		tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE), statRDPSMin.." - "..statRDPSMax, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+		tip:AddDoubleLine(format(STAT_FORMAT, DAMAGE_PER_SECOND), statRangedDPS, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
+		--
 	end
 	
 end
 
-function noobGetSubStat(unit, statIndex)
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- I need to find a way to put this in one file since it's used by
+-- both stathybrid.lua and this file (possible by statpvp.lua too)
+function noobStats.getSubStat(unit, statIndex)
 	local context;
 	local stat;
 	local effectiveStat;
@@ -387,7 +471,7 @@ function noobGetSubStat(unit, statIndex)
 
 end
 
-local function noobClassRoles(class)
+function noobStats.classRoles(class)
 	local classType = class
 	local classQuery = GetPrimaryTalentTree()
 	local classRole
@@ -460,7 +544,7 @@ end
 
 function noobStats.whatRole()
 	local unitClass = select(2, UnitClass("Player"))
-	local checkRole = noobClassRoles(unitClass)
+	local checkRole = noobStats.classRoles(unitClass)
 	local thisRole
 
 	if checkRole == "Tank" then thisRole = 1 end

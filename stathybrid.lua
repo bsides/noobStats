@@ -80,8 +80,8 @@ function noobLDBHybrid.OnTooltipShow(tip)
 		StatCritLabel = _G["MELEE_CRIT_CHANCE"]
 	end	
 	
-	--dump(noobClassRoles(classType))
-	local classRole = noobClassRoles(classType)
+	--dump(noobStats.classRoles(classType))
+	local classRole = noobStats.classRoles(classType)
 	
 	if classRole == "Tank" then
 		StatHaste = meleeHaste
@@ -175,7 +175,7 @@ function noobLDBHybrid.OnTooltipShow(tip)
 
 end
 
-function noobClassRoles(class)
+function noobStats.classRoles(class)
 	local classType = class
 	local classQuery = GetPrimaryTalentTree()
 	local classRole
