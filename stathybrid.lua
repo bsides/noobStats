@@ -115,7 +115,7 @@ function noobLDBHybrid.OnTooltipShow(tip)
 	--[[
 	if classType == "WARRIOR" 
 		or classType == "PALADIN" 
-		or classType == "DEATH KNIGHT"
+		or classType == "DEATHKNIGHT"
 		or classType == "ROGUE"
 		or classType == "SHAMAN"
 		or classType == "DRUID"
@@ -215,7 +215,7 @@ function noobClassRoles(class)
 			classRole = "Healer"
 		end
 	end
-	if classType == "DEATH KNIGHT" then
+	if classType == "DEATHKNIGHT" then
 		if classQuery == 1 then
 			classRole = "Tank"
 		else

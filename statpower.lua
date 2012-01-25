@@ -18,6 +18,7 @@ local L = noobStatsLocalizationTable;
 if GetLocale() == "ptBR" then
 	L["noobStats Specific Stats"] = "noobStats Atributos Específicos";
 	L["Total Avoidance"] = "Total de Evasão" -- alguma tradução melhor para isso?
+	L["CTC"] = "CTC" -- see below
 	L["Combat Table Coverage"] = "Cobertura da Tabela de Combate (CTC)" -- alguma tradução melhor pra isso?
 	L["Includes %d%% chance to be missed by level %d mob"] = "Inclui a chance de erro de %d%% do alvo de nível %d"
 	L["Average Mitigation"] = "Média de Mitigação"
@@ -41,7 +42,7 @@ local function PowerOnUpdate()
 		local statCTC				= format("%.2f%%", GetDodgeChance() + GetParryChance() + GetBlockChance() + statMiss) -- Combat Table Coverage
 		
 		displayStatText = statCTC.." / 102.4%"
-		displayStatLabel = L["Combat Table Coverage"]
+		displayStatLabel = L["CTC"]
 	elseif noobStats.whatRole() == 2 then -- Healer
 		-- Caster stats
 		-- spellpower
@@ -262,7 +263,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		
 	-- 4 = DPS Melee
 	elseif noobStats.whatRole() == 4 then
-		if unitClass == "WARRIOR" or unitClass == "PALADIN" or unitClass == "DEATH KNIGHT" then
+		if unitClass == "WARRIOR" or unitClass == "PALADIN" or unitClass == "DEATHKNIGHT" then
 			-- Strength and what it gives
 			tip:AddDoubleLine(format(STAT_FORMAT, SPELL_STAT1_NAME), statStrength)
 			tip:AddLine(statStrengthGives, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
@@ -426,7 +427,7 @@ local function noobClassRoles(class)
 			classRole = "Healer"
 		end
 	end
-	if classType == "DEATH KNIGHT" then
+	if classType == "DEATHKNIGHT" then
 		if classQuery == 1 then
 			classRole = "Tank"
 		else
