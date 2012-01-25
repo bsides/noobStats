@@ -16,7 +16,7 @@ end
 noobStatsLocalizationTable = setmetatable({}, {__index=defaultFunc});
 local L = noobStatsLocalizationTable;
 if GetLocale() == "ptBR" then
-	L["noobUI Specific Stats"] = "noobUI Atributos Específicos";
+	L["noobStats Specific Stats"] = "noobStats Atributos Específicos";
 	L["Total Avoidance"] = "Total de Evasão" -- alguma tradução melhor para isso?
 	L["Combat Table Coverage"] = "Cobertura da Tabela de Combate (CTC)" -- alguma tradução melhor pra isso?
 	L["Includes %d%% chance to be missed by level %d mob"] = "Inclui a chance de erro de %d%% do alvo de nível %d"
@@ -30,46 +30,33 @@ local noobLDBPower = LibStub("LibDataBroker-1.1"):NewDataObject("noobPower", {
 	label = "Power"
 })
 
-local function CritOnUpdate()
-
-	local unitClass = select(2, UnitClass("Player"))
-	local checkRole = noobClassRoles(unitClass)
-	local thisRole
-	
-	local classColor = RAID_CLASS_COLORS[unitClass]
-	--self:SetBackdropBorderColor(Color.r, Color.g, Color.b)
-
-	if checkRole == "Tank" then thisRole = 1 end
-	if checkRole == "Healer" then thisRole = 2 end
-	if checkRole == "DPS Caster" then thisRole = 3 end
-	if checkRole == "DPS Melee" then thisRole = 4 end
-	if checkRole == "DPS Ranged" then thisRole = 5 end
+local function PowerOnUpdate()
 	
 	local displayStatLabel -- Label of LDB
 	local displayStatText -- Text's Label of LDB
-	
-	if thisRole == 1 then -- Tank
+
+	if noobStats.whatRole() == 1 then -- Tank
 		local statMiss				= 5 -- Miss Table (not really a stat)
 		if select(2, UnitRace("player")) == "NightElf" then statMiss = 7 end -- Night elves' miss
 		local statCTC				= format("%.2f%%", GetDodgeChance() + GetParryChance() + GetBlockChance() + statMiss) -- Combat Table Coverage
 		
 		displayStatText = statCTC.." / 102.4%"
 		displayStatLabel = L["Combat Table Coverage"]
-	elseif thisRole == 2 then -- Healer
+	elseif noobStats.whatRole() == 2 then -- Healer
 		-- Caster stats
 		-- spellpower
 		local statSpellPower 				= GetSpellBonusDamage(7)	-- STAT_SPELLPOWER
 		
 		displayStatText = statSpellPower
 		displayStatLabel = STAT_SPELLPOWER
-	elseif thisRole == 3 then -- DPS Caster
+	elseif noobStats.whatRole() == 3 then -- DPS Caster
 		-- Caster stats
 		-- spellpower
 		local statSpellPower 				= GetSpellBonusDamage(7)	-- STAT_SPELLPOWER
 		
 		displayStatText = statSpellPower
 		displayStatLabel = STAT_SPELLPOWER
-	elseif thisRole == 4 then -- DPS Melee
+	elseif noobStats.whatRole() == 4 then -- DPS Melee
 		-- Melee stats
 		-- attack power
 		local statAttackPowerBase, statAttackPowerPosBuff, statAttackPowerNegBuff = UnitAttackPower("player"); -- STAT_ATTACK_POWER
@@ -78,33 +65,23 @@ local function CritOnUpdate()
 
 		displayStatText = statAttackPowerEffectiveAP
 		displayStatLabel = STAT_ATTACK_POWER	
-	elseif thisRole == 5 then -- DPS Ranged
+	elseif noobStats.whatRole() == 5 then -- DPS Ranged
 	end
 	
 	noobLDBPower.label = displayStatLabel
 	noobLDBPower.text = displayStatText
 end
 
-f:SetScript("OnUpdate", CritOnUpdate)
+f:SetScript("OnUpdate", PowerOnUpdate)
 
 local noobTip = nil
 function noobLDBPower.OnTooltipShow(tip)
 	if not tip or not tip.AddLine or not tip.AddDoubleLine then return end
 
 	if not noobTip then noobTip = CreateFrame("GameTooltip", "noobTip") end
-	
-	local unitClass = select(2, UnitClass("Player"))
-	local checkRole = noobClassRoles(unitClass)
-	local thisRole
-	
-	local classColor = RAID_CLASS_COLORS[unitClass]
-	--self:SetBackdropBorderColor(Color.r, Color.g, Color.b)
 
-	if checkRole == "Tank" then thisRole = 1 end
-	if checkRole == "Healer" then thisRole = 2 end
-	if checkRole == "DPS Caster" then thisRole = 3 end
-	if checkRole == "DPS Melee" then thisRole = 4 end
-	if checkRole == "DPS Ranged" then thisRole = 5 end
+	local classColor = RAID_CLASS_COLORS[select(2, UnitClass("Player"))]
+	--self:SetBackdropBorderColor(classColor.r, classColor.g, classColor.b)
 	
 	-- Basic stats	
 	local statStrength		= select(2, UnitStat("player", 1))		-- SPELL_STAT1_NAME
@@ -220,7 +197,7 @@ function noobLDBPower.OnTooltipShow(tip)
 	-- Tooltip!
 	local whatClass = noobClassRoles(select(2, UnitClass("Player")))
 	
-	tip:AddLine(L["noobUI Specific Stats"], HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+	tip:AddLine(L["noobStats Specific Stats"], HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 	if whatClass ~= "NENHUM" then
 		if whatClass == "DPS Melee" or whatClass == "DPS Ranged" or whatClass == "DPS Caster" then
 			tip:AddLine(select(1,UnitClass("player")).." "..INLINE_DAMAGER_ICON.." "..DAMAGER, classColor.r, classColor.g, classColor.b, true)
@@ -239,7 +216,7 @@ function noobLDBPower.OnTooltipShow(tip)
 	tip:AddLine(" ")
 	
 	-- 1 = Tank
-	if thisRole == 1 then
+	if noobStats.whatRole() == 1 then
 		-- Total Health
 		tip:AddDoubleLine(format(STAT_FORMAT, HEALTH), statHealth)
 		-- Stamina and what it gives
@@ -268,7 +245,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		tip:AddDoubleLine(format(STAT_FORMAT, BLOCK_CHANCE), statBlock, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b)
 		
 	-- 2 = DPS Caster, 3 = Healer
-	elseif thisRole == 2 or thisRole == 3 then
+	elseif noobStats.whatRole() == 2 or noobStats.whatRole() == 3 then
 		-- Intelect and what it gives
 		tip:AddDoubleLine(format(STAT_FORMAT, SPELL_STAT4_NAME), statIntelect)
 		tip:AddLine(statIntelectGives, GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b, true)
@@ -284,7 +261,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		tip:AddDoubleLine(format(STAT_FORMAT, MANA_REGEN_COMBAT), statRegenIn)
 		
 	-- 4 = DPS Melee
-	elseif thisRole == 4 then
+	elseif noobStats.whatRole() == 4 then
 		if unitClass == "WARRIOR" or unitClass == "PALADIN" or unitClass == "DEATH KNIGHT" then
 			-- Strength and what it gives
 			tip:AddDoubleLine(format(STAT_FORMAT, SPELL_STAT1_NAME), statStrength)
@@ -318,7 +295,7 @@ function noobLDBPower.OnTooltipShow(tip)
 		end
 	
 	-- DPS Ranged
-	elseif thisRole == 5 then
+	elseif noobStats.whatRole() == 5 then
 		tip:AddDoubleLine(SPELL_STAT2_NAME, statAgility)
 	end
 	
@@ -478,4 +455,18 @@ local function noobClassRoles(class)
 	
 	if not classRole then return end
 	return classRole
+end
+
+function noobStats.whatRole()
+	local unitClass = select(2, UnitClass("Player"))
+	local checkRole = noobClassRoles(unitClass)
+	local thisRole
+
+	if checkRole == "Tank" then thisRole = 1 end
+	if checkRole == "Healer" then thisRole = 2 end
+	if checkRole == "DPS Caster" then thisRole = 3 end
+	if checkRole == "DPS Melee" then thisRole = 4 end
+	if checkRole == "DPS Ranged" then thisRole = 5 end
+	
+	return thisRole
 end

@@ -11,7 +11,7 @@ end
 noobStatsLocalizationTable = setmetatable({}, {__index=defaultFunc});
 local L = noobStatsLocalizationTable;
 if GetLocale() == "ptBR" then
-	L["noobUI Hybrid Stats"] = "noobUI Atributos Híbridos";
+	L["noobStats Hybrid Stats"] = "noobStats Atributos Híbridos";
 end
 --
 
@@ -151,7 +151,7 @@ function noobLDBHybrid.OnTooltipShow(tip)
 	end
 	]]
 			
-	tip:AddLine(L["noobUI Hybrid Stats"], HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+	tip:AddLine(L["noobStats Hybrid Stats"], HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 	tip:AddLine(" ")
 	--[[ Now @ statpower.lua, which makes more sense
 	if classRole ~= "NENHUM" then
