@@ -31,19 +31,58 @@ local noobLDBPower = LibStub("LibDataBroker-1.1"):NewDataObject("noobPower", {
 })
 
 local function CritOnUpdate()
-	local meleeCrit 	= GetCritChance()
-	local spellCrit 	= GetSpellCritChance(1)
-	local rangedCrit 	= GetRangedCritChance()
-	local StatCrit
-	if spellCrit > meleeCrit then
-		StatCrit = spellCrit
-	elseif select(2, UnitClass("Player")) == "HUNTER" then    
-		StatCrit = rangedCrit
-	else
-		StatCrit = meleeCrit
-	end
 
-	noobLDBPower.text = format("%.2f%%", StatCrit)
+	local unitClass = select(2, UnitClass("Player"))
+	local checkRole = noobClassRoles(unitClass)
+	local thisRole
+	
+	local classColor = RAID_CLASS_COLORS[unitClass]
+	--self:SetBackdropBorderColor(Color.r, Color.g, Color.b)
+
+	if checkRole == "Tank" then thisRole = 1 end
+	if checkRole == "Healer" then thisRole = 2 end
+	if checkRole == "DPS Caster" then thisRole = 3 end
+	if checkRole == "DPS Melee" then thisRole = 4 end
+	if checkRole == "DPS Ranged" then thisRole = 5 end
+	
+	local displayStatLabel -- Label of LDB
+	local displayStatText -- Text's Label of LDB
+	
+	if thisRole == 1 then -- Tank
+		local statMiss				= 5 -- Miss Table (not really a stat)
+		if select(2, UnitRace("player")) == "NightElf" then statMiss = 7 end -- Night elves' miss
+		local statCTC				= format("%.2f%%", GetDodgeChance() + GetParryChance() + GetBlockChance() + statMiss) -- Combat Table Coverage
+		
+		displayStatText = statCTC.." / 102.4%"
+		displayStatLabel = L["Combat Table Coverage"]
+	elseif thisRole == 2 then -- Healer
+		-- Caster stats
+		-- spellpower
+		local statSpellPower 				= GetSpellBonusDamage(7)	-- STAT_SPELLPOWER
+		
+		displayStatText = statSpellPower
+		displayStatLabel = STAT_SPELLPOWER
+	elseif thisRole == 3 then -- DPS Caster
+		-- Caster stats
+		-- spellpower
+		local statSpellPower 				= GetSpellBonusDamage(7)	-- STAT_SPELLPOWER
+		
+		displayStatText = statSpellPower
+		displayStatLabel = STAT_SPELLPOWER
+	elseif thisRole == 4 then -- DPS Melee
+		-- Melee stats
+		-- attack power
+		local statAttackPowerBase, statAttackPowerPosBuff, statAttackPowerNegBuff = UnitAttackPower("player"); -- STAT_ATTACK_POWER
+		local statAttackPowerBonus = max((statAttackPowerBase + statAttackPowerPosBuff + statAttackPowerNegBuff), 0) / ATTACK_POWER_MAGIC_NUMBER; -- 14
+		local statAttackPowerEffectiveAP = max(0, statAttackPowerBase + statAttackPowerPosBuff + statAttackPowerNegBuff);
+
+		displayStatText = statAttackPowerEffectiveAP
+		displayStatLabel = STAT_ATTACK_POWER	
+	elseif thisRole == 5 then -- DPS Ranged
+	end
+	
+	noobLDBPower.label = displayStatLabel
+	noobLDBPower.text = displayStatText
 end
 
 f:SetScript("OnUpdate", CritOnUpdate)
